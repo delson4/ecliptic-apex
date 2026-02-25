@@ -218,6 +218,86 @@
       pointer-events: none;
       opacity: 0.4;
     }
+
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      /* Info panel — collapsed by default */
+      #info-panel {
+        min-width: 0;
+        max-width: calc(100vw - 24px);
+        padding: 10px 14px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      #info-panel h2 {
+        font-size: 14px;
+        margin-bottom: 0;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #info-panel.collapsed > :not(h2) {
+        display: none;
+      }
+
+      /* Controls panel — compact */
+      #controls-panel {
+        padding: 8px 10px;
+        gap: 8px;
+        font-size: 11px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        transform: none;
+        border-radius: 8px 8px 0 0;
+        max-width: 100vw;
+      }
+      #controls-panel label {
+        font-size: 0; /* hide label text */
+      }
+      #controls-panel label select,
+      #controls-panel label input {
+        font-size: 11px; /* restore child font-size */
+      }
+      #controls-panel select, #controls-panel input[type="datetime-local"] {
+        padding: 3px 4px;
+        font-size: 11px;
+      }
+      #controls-panel input[type="datetime-local"] {
+        max-width: 155px;
+      }
+      #controls-panel button {
+        padding: 3px 8px;
+        font-size: 11px;
+      }
+      #controls-panel .toggle-group {
+        gap: 6px;
+        font-size: 11px;
+      }
+      #controls-panel .toggle-group label {
+        font-size: 11px; /* restore toggle label text */
+      }
+
+      /* About button */
+      #btn-about {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      /* About overlay — mobile */
+      #about-content {
+        padding: 20px 16px;
+        font-size: 13.5px;
+        border-radius: 8px;
+      }
+      #about-content table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
   </style>
 </head>
 <body>
@@ -229,7 +309,7 @@
     <div id="globe-container">
       <div id="globe-viewer"></div>
       <div id="info-panel">
-        <h2 id="panel-title">ECLIPTIC APEX</h2>
+        <h2 id="panel-title">ECLIPTIC APEX <span id="panel-chevron"></span></h2>
         <div><span class="label">Latitude: </span><span class="value" id="apex-lat">&mdash;</span></div>
         <div><span class="label">Longitude: </span><span class="value" id="apex-lon">&mdash;</span></div>
         <div><span class="label">Elevation: </span><span class="value" id="apex-elev">&mdash;</span></div>
@@ -571,6 +651,39 @@
     </div>
   </div>
 
+  <script>
+    (function() {
+      var panel = document.getElementById('info-panel');
+      var title = document.getElementById('panel-title');
+      var chevron = document.getElementById('panel-chevron');
+      var isMobile = window.matchMedia('(max-width: 768px)');
+
+      function update(mobile) {
+        if (mobile) {
+          chevron.textContent = panel.classList.contains('collapsed') ? '\u25BC' : '\u25B2';
+        } else {
+          chevron.textContent = '';
+          panel.classList.remove('collapsed');
+        }
+      }
+
+      if (isMobile.matches) panel.classList.add('collapsed');
+      update(isMobile.matches);
+
+      title.addEventListener('click', function() {
+        if (!isMobile.matches) return;
+        panel.classList.toggle('collapsed');
+        update(true);
+      });
+
+      isMobile.addEventListener('change', function(e) {
+        if (e.matches) {
+          panel.classList.add('collapsed');
+        }
+        update(e.matches);
+      });
+    })();
+  </script>
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
