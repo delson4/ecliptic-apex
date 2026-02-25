@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ecliptic Apex</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; background: #000; color: #eee; }
+
+    #app {
+      width: 100%; height: 100%;
+    }
+
+    #globe-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%; height: 100%;
+    }
+
+    #globe-viewer {
+      width: 100%; height: 100%;
+    }
+
+    #info-panel {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: rgba(0,0,0,0.80);
+      border: 1px solid rgba(100,200,255,0.3);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      min-width: 280px;
+      max-width: 320px;
+      z-index: 10;
+      backdrop-filter: blur(6px);
+    }
+    #info-panel h2 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      color: #7df;
+      letter-spacing: 0.5px;
+    }
+    #info-panel h3 {
+      font-size: 13px;
+      margin: 4px 0 4px 0;
+      color: #fa4;
+      letter-spacing: 0.3px;
+    }
+    #info-panel .label { color: #8ab; }
+    #info-panel .value { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+    #info-panel hr { border-color: #234; margin: 8px 0; }
+    #info-panel .action-btn {
+      display: inline-block;
+      background: #2a1a3a;
+      border: 1px solid #639;
+      color: #d8f;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    #info-panel .action-btn:hover { background: #3a2a4a; }
+
+    #controls-panel {
+      position: absolute;
+      bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.80);
+      border: 1px solid rgba(100,200,255,0.3);
+      border-radius: 8px;
+      padding: 10px 18px;
+      font-size: 13px;
+      z-index: 10;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      backdrop-filter: blur(6px);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    #controls-panel label { color: #8ab; white-space: nowrap; }
+    #controls-panel select, #controls-panel input[type="datetime-local"] {
+      background: #1a2a3a;
+      border: 1px solid #345;
+      color: #eee;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    #controls-panel button {
+      background: #1a3a5a;
+      border: 1px solid #345;
+      color: #adf;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    #controls-panel button:hover { background: #2a4a6a; }
+    #controls-panel .toggle-group { display: flex; gap: 8px; align-items: center; }
+    #controls-panel .toggle-group label { display: flex; gap: 4px; align-items: center; cursor: pointer; }
+
+    .cesium-viewer-bottom { display: none !important; }
+    .cesium-widget-credits { display: none !important; }
+
+    /* About overlay */
+    #about-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(10px);
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+    #about-overlay.visible { display: block; }
+    #about-content {
+      max-width: 740px;
+      margin: 0 auto;
+      background: rgba(10,18,30,0.95);
+      border: 1px solid rgba(100,200,255,0.25);
+      border-radius: 12px;
+      padding: 36px 40px;
+      line-height: 1.75;
+      font-size: 14.5px;
+      color: #cdd;
+    }
+    #about-content h1 { color: #7df; font-size: 22px; margin-bottom: 4px; letter-spacing: 1px; }
+    #about-content .subtitle { color: #8ab; font-size: 13px; margin-bottom: 24px; }
+    #about-content h2 { color: #fa4; font-size: 16px; margin: 28px 0 10px 0; letter-spacing: 0.3px; }
+    #about-content p { margin-bottom: 14px; }
+    #about-content em { color: #adf; font-style: normal; }
+    #about-content strong { color: #fff; }
+    #about-content .formula {
+      display: block;
+      background: rgba(30,50,70,0.6);
+      border-left: 3px solid #468;
+      padding: 10px 16px;
+      margin: 12px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13.5px;
+      color: #bde;
+      white-space: pre-wrap;
+    }
+    #about-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0;
+      font-size: 13px;
+    }
+    #about-content th {
+      text-align: left;
+      color: #8ab;
+      border-bottom: 1px solid #345;
+      padding: 6px 10px;
+      font-weight: 500;
+    }
+    #about-content td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #1a2a3a;
+    }
+    #about-content td:nth-child(n+3) { font-variant-numeric: tabular-nums; }
+    #about-content .winner td { color: #4f8; font-weight: 600; }
+    #about-content .close-btn {
+      position: sticky;
+      top: 0;
+      float: right;
+      background: #1a2a3a;
+      border: 1px solid #345;
+      color: #adf;
+      padding: 6px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      z-index: 1;
+    }
+    #about-content .close-btn:hover { background: #2a4a6a; }
+    #about-content a { color: #7bf; text-decoration: none; }
+    #about-content a:hover { text-decoration: underline; }
+    #about-content .footnote { font-size: 12px; color: #689; margin-top: 24px; border-top: 1px solid #234; padding-top: 12px; }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0,0,0,0.92);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.3s ease;
+    }
+    #loading-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    #loading-overlay .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid rgba(100,200,255,0.2);
+      border-top-color: #7df;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 18px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-overlay .loading-text {
+      color: #8cf;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+    }
+    #controls-panel.disabled {
+      pointer-events: none;
+      opacity: 0.4;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loading-text">Initializing...</div>
+  </div>
+  <div id="app">
+    <div id="globe-container">
+      <div id="globe-viewer"></div>
+      <div id="info-panel">
+        <h2 id="panel-title">ECLIPTIC APEX</h2>
+        <div><span class="label">Latitude: </span><span class="value" id="apex-lat">&mdash;</span></div>
+        <div><span class="label">Longitude: </span><span class="value" id="apex-lon">&mdash;</span></div>
+        <div><span class="label">Elevation: </span><span class="value" id="apex-elev">&mdash;</span></div>
+        <div><span class="label">Ecliptic Height: </span><span class="value" id="apex-height">&mdash;</span></div>
+        <hr>
+        <div><span class="label">UTC: </span><span class="value" id="utc-time">&mdash;</span></div>
+        <div><span class="label">GMST: </span><span class="value" id="gmst-time">&mdash;</span></div>
+        <div><span class="label">Mode: </span><span class="value" id="mode-label">Ellipsoid + Topography</span></div>
+        <hr>
+        <h3>GLOBAL MAXIMUM</h3>
+        <div><span class="value" id="abs-name" style="color:#4f8;font-size:12px;"></span></div>
+        <div><span class="label">Location: </span><span class="value" id="abs-lat">&mdash;</span> <span class="value" id="abs-lon"></span></div>
+        <div><span class="label">Elevation: </span><span class="value" id="abs-elev">&mdash;</span></div>
+        <div><span class="label">Max Height: </span><span class="value" id="abs-height">&mdash;</span></div>
+        <div><span class="label">Topo bonus: </span><span class="value" id="abs-topo-adv">&mdash;</span></div>
+        <div><span class="label">Next occurs: </span><span class="value" id="abs-time">&mdash;</span></div>
+        <button class="action-btn" id="btn-goto-max">Go to Max Time for This Day</button>
+      </div>
+    </div>
+  </div>
+  <div id="controls-panel">
+    <label>Speed:
+      <select id="speed-select">
+        <option value="1" selected>1x</option>
+        <option value="60">60x</option>
+        <option value="360">360x</option>
+        <option value="3600">3600x</option>
+      </select>
+    </label>
+    <label>Date/Time (UTC):
+      <input type="datetime-local" id="datetime-input" step="1" />
+    </label>
+    <button id="btn-now">Now</button>
+    <button id="btn-play-pause">&#x23F8;</button>
+    <label>Camera:
+      <select id="camera-mode">
+        <option value="free">Free</option>
+        <option value="ecliptic" selected>Ecliptic</option>
+        <option value="follow">Follow Apex</option>
+      </select>
+    </label>
+    <label>Hemisphere:
+      <select id="hemisphere-select">
+        <option value="north" selected>North</option>
+        <option value="south">South</option>
+      </select>
+    </label>
+    <div class="toggle-group">
+      <label><input type="checkbox" id="toggle-plane" checked /> Plane</label>
+      <label><input type="checkbox" id="toggle-trail" checked /> Trail</label>
+      <label><input type="checkbox" id="toggle-topo" checked /> Topo</label>
+    </div>
+    </div>
+  <button id="btn-about" style="
+    position: absolute;
+    top: 12px; right: 12px;
+    background: rgba(0,0,0,0.80);
+    border: 1px solid rgba(100,200,255,0.3);
+    color: #7df;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    z-index: 10;
+    backdrop-filter: blur(6px);
+    letter-spacing: 0.5px;
+  ">About</button>
+  <div id="about-overlay">
+    <div id="about-content">
+      <button class="close-btn" id="about-close">Close</button>
+      <h1>ECLIPTIC APEX</h1>
+      <div class="subtitle">The highest point above Earth's orbital plane, in real time</div>
+
+      <h2>What is this?</h2>
+      <p>
+        Earth orbits the Sun in a flat plane called the <em>ecliptic plane</em>.
+        But Earth's axis is tilted 23.44° relative to this plane. That tilt gives
+        us seasons &mdash; and it also means one point on Earth's surface is always
+        "higher" above the ecliptic plane than any other.
+      </p>
+      <p>
+        That point is the <strong>Ecliptic Apex</strong>: the spot on Earth's surface
+        that, at any given moment, extends farthest above the plane of our orbit
+        around the Sun. This app computes and tracks it in real time.
+      </p>
+      <p>
+        Neither the <strong>North Pole</strong> nor <strong>Mt. Everest</strong>
+        is, from this perspective, the top of the world. The North Pole is too
+        close to Earth's spin axis and too far from the ecliptic zenith. Everest
+        is the tallest mountain, but at 28°N it's nowhere near the right latitude.
+        The true "top of the world" &mdash; the point farthest above our orbital
+        plane &mdash; is a remote nunatak in East Greenland.
+      </p>
+
+      <h2>Why isn't it the North Pole?</h2>
+      <p>
+        Because Earth is tilted. The direction that points "up" from the ecliptic
+        plane is called the <em>Ecliptic North Pole</em> (ENP). It is fixed relative
+        to the stars, tilted 23.44° away from Earth's geographic North Pole.
+        As Earth rotates, the ENP direction sweeps around a circle in Earth's
+        reference frame, tracing out a cone at about 66.56°N latitude
+        (= 90° &minus; 23.44°) once every <em>sidereal day</em> (23h 56m 4.1s).
+      </p>
+      <p>
+        So the apex isn't at the pole &mdash; it sweeps around the Arctic at roughly
+        15° of longitude per hour, circling the globe every 23 hours and 56 minutes.
+        The green track on the globe shows this full daily path.
+      </p>
+
+      <h2>How is the apex computed?</h2>
+      <p>
+        For any point on Earth's surface with ECEF position vector <strong>r</strong>,
+        its height above the ecliptic plane is the dot product of <strong>r</strong>
+        with the ENP unit vector:
+      </p>
+      <div class="formula">h = r &middot; ENP&#x0302;</div>
+      <p>
+        The ENP direction in the inertial frame (ICRF) is constant:
+      </p>
+      <div class="formula">ENP_ICRF = [0, &minus;sin(23.44°), cos(23.44°)]</div>
+      <p>
+        We rotate this into the Earth-fixed frame (ECEF) using CesiumJS's
+        high-precision ICRF-to-Fixed rotation matrix, then scan every point on a
+        grid covering 60°N&ndash;75°N to find the maximum dot product. The grid
+        uses <a href="https://www.ncei.noaa.gov/products/etopo-global-relief-model"
+        target="_blank">ETOPO 2022</a> topographic data at 2-arc-minute resolution
+        (~4.86 million points), so mountains that protrude above the WGS84 ellipsoid
+        get a real advantage.
+      </p>
+
+      <h2>Does topography matter?</h2>
+      <p>
+        Yes, significantly. On a perfectly smooth WGS84 ellipsoid (no mountains),
+        the apex would always lie at exactly the sub-ENP latitude (~66.56°N) and
+        the ecliptic height would be determined entirely by Earth's oblate shape.
+        The equatorial bulge (semi-major axis 6,378 km) vs. the polar flattening
+        (semi-minor axis 6,357 km) creates a strong latitude dependence.
+      </p>
+      <p>
+        But mountains shift the apex. A peak doesn't need to be at the exact optimal
+        latitude &mdash; it just needs enough elevation to compensate for being slightly
+        off. The maximum ecliptic height any surface point can achieve (over all
+        possible times) is:
+      </p>
+      <div class="formula">h_max = sin(&epsilon;) &middot; &radic;(x&sup2; + y&sup2;) + cos(&epsilon;) &middot; z</div>
+      <p>
+        where (x, y, z) is the point's ECEF position and &epsilon; = 23.44° is the
+        obliquity. This depends only on <strong>latitude and elevation</strong>, not
+        longitude &mdash; every point gets its turn once per sidereal day.
+      </p>
+
+      <h2>The global maximum</h2>
+      <p>
+        The single point on Earth that gets highest above the ecliptic plane is
+        <strong>Mont Forel</strong> (3,383 m), a nunatak in the Schweizerland Alps
+        of East Greenland at 66.935°N, 36.786°W. It wins because of its rare
+        combination: a tall exposed rock peak sitting almost exactly at the magic
+        latitude of ~66.56°N.
+      </p>
+      <p>
+        The apex visits Mont Forel once every 23 hours 56 minutes (a <em>sidereal
+        day</em> &mdash; one rotation relative to the stars). But when?
+        Here's an elegant shortcut: <strong>the Sun is always near the horizon
+        at the apex</strong>. This is because the ecliptic north pole direction
+        is perpendicular to the Sun (the Sun lies in the ecliptic plane, by
+        definition), so the point highest above that plane is always ~90° from
+        the subsolar point &mdash; right on the day/night boundary. If you're
+        standing at the apex, you'll see the Sun on the horizon, either rising
+        or setting.
+      </p>
+      <p>
+        So to catch the apex at Mont Forel, <strong>the Sun is always near the
+        horizon</strong>. Which side depends on the season:
+      </p>
+      <ul style="margin: 8px 0 14px 20px; line-height: 1.8;">
+        <li><strong>Spring equinox</strong> (March) &mdash; the apex arrives at sunrise</li>
+        <li><strong>Summer solstice</strong> (June) &mdash; midnight sun, with the Sun
+            skimming the horizon at its lowest point</li>
+        <li><strong>Autumn equinox</strong> (September) &mdash; the apex arrives at sunset</li>
+        <li><strong>Winter solstice</strong> (December) &mdash; polar night, with the Sun
+            just below the horizon at its highest point</li>
+      </ul>
+      <p>
+        This pattern isn't a coincidence. The Arctic Circle (66.56°N) and the
+        optimal apex latitude (~66.56°N) are both set by Earth's axial tilt of
+        23.44° (= 90° &minus; 66.56°). Mont Forel sits at 66.94°N, right at
+        this boundary, so the Sun is always close to the horizon when the apex
+        arrives &mdash; it just transitions smoothly from rising to setting and
+        back over the course of the year.
+        Use the <em>Go to Max Time for This Day</em> button to find the next occurrence.
+      </p>
+      <p>Here's how the top candidates compare:</p>
+      <table>
+        <tr>
+          <th>Peak</th>
+          <th>Latitude</th>
+          <th>Elevation</th>
+          <th>Max ecliptic height</th>
+          <th>vs. Mont Forel</th>
+        </tr>
+        <tr class="winner">
+          <td>Mont Forel, Greenland</td>
+          <td>66.94°N</td>
+          <td>3,383 m</td>
+          <td>6,363.387 km</td>
+          <td>winner</td>
+        </tr>
+        <tr>
+          <td>Gunnbjorn Fjeld, Greenland</td>
+          <td>68.92°N</td>
+          <td>3,694 m</td>
+          <td>6,358.419 km</td>
+          <td>&minus;4,968 m</td>
+        </tr>
+        <tr>
+          <td>Dome, Watkins Range</td>
+          <td>68.90°N</td>
+          <td>3,683 m</td>
+          <td>~6,358.3 km</td>
+          <td>&minus;5,100 m</td>
+        </tr>
+        <tr>
+          <td>Cone, Watkins Range</td>
+          <td>68.88°N</td>
+          <td>3,669 m</td>
+          <td>~6,358.1 km</td>
+          <td>&minus;5,300 m</td>
+        </tr>
+        <tr>
+          <td>Denali, Alaska</td>
+          <td>63.07°N</td>
+          <td>6,190 m</td>
+          <td>6,354.462 km</td>
+          <td>&minus;8,925 m</td>
+        </tr>
+        <tr>
+          <td>Hvannadalshn&uacute;kur, Iceland</td>
+          <td>64.01°N</td>
+          <td>2,110 m</td>
+          <td>~6,354.2 km</td>
+          <td>&minus;9,200 m</td>
+        </tr>
+        <tr>
+          <td>Galdh&oslash;piggen, Norway</td>
+          <td>61.64°N</td>
+          <td>2,469 m</td>
+          <td>~6,347.3 km</td>
+          <td>&minus;16,100 m</td>
+        </tr>
+        <tr style="color:#689;">
+          <td>Ellipsoid optimum (sea level)</td>
+          <td>66.56°N</td>
+          <td>0 m</td>
+          <td>6,360.141 km</td>
+          <td>&minus;3,246 m</td>
+        </tr>
+        <tr style="color:#689;">
+          <td colspan="5" style="padding-top:8px; border-bottom:1px solid #345; font-style:italic;">For comparison &mdash; famous "tops of the world" that aren't:</td>
+        </tr>
+        <tr>
+          <td>North Pole</td>
+          <td>90.00°N</td>
+          <td>0 m</td>
+          <td>5,832 km</td>
+          <td>&minus;531 km</td>
+        </tr>
+        <tr>
+          <td>Mt. Everest, Nepal/Tibet</td>
+          <td>28.00°N</td>
+          <td>8,849 m</td>
+          <td>4,979 km</td>
+          <td>&minus;1,384 km</td>
+        </tr>
+      </table>
+      <p>
+        <strong>Gunnbjorn Fjeld</strong> (Greenland's highest peak at 3,694 m)
+        is 311 m taller, but at 68.92°N it's ~2.4° too far north &mdash; you'd
+        need an 8,228 m peak at that latitude to tie Mont Forel.
+        The other <strong>Watkins Range</strong> peaks (Dome, Cone) are nearby but
+        slightly lower. <strong>Denali</strong>
+        (6,190 m) is nearly twice as tall, but at 63.07°N it's ~3.5° too far
+        south. <strong>Hvannadalshn&uacute;kur</strong> (Iceland) and
+        <strong>Galdh&oslash;piggen</strong> (Norway) are in the right latitude band
+        but too short. Notice that the bare ellipsoid at the optimal latitude
+        still beats every peak except Mont Forel &mdash; that's how
+        finely balanced the tradeoff between latitude and altitude is.
+      </p>
+
+      <h2>Why Mont Forel?</h2>
+      <p>
+        At 3,383 m elevation, the optimal latitude shifts only negligibly from
+        66.561°N. Mont Forel sits at 66.935°N &mdash; just 0.37° off the theoretical
+        optimum. No other named peak in the world combines this much height with
+        this much proximity to the magic latitude. It's the Goldilocks peak:
+        tall enough to matter, and in almost exactly the right place.
+      </p>
+      <p>
+        Mont Forel is a <em>nunatak</em> &mdash; an exposed rock summit protruding
+        through the Greenland ice sheet. It was first climbed in 1939 by the Swiss
+        expedition of Andr&eacute; Roch and was believed to be Greenland's highest
+        peak until Gunnbjorn Fjeld was surveyed in 1935. It is located in the
+        Schweizerland Alps of East Greenland, north of Ammassalik.
+      </p>
+
+      <h2>The ecliptic plane visualization</h2>
+      <p>
+        The semi-transparent disc on the 3D globe shows the ecliptic plane passing
+        through Earth's center. It's tilted 23.44° from the equator and appears to
+        rotate slowly (one full turn per sidereal day) as Earth spins. The
+        <em>Camera: Ecliptic</em> mode places the camera on this plane looking at
+        Earth edge-on, with the apex visible at the top of the silhouette.
+      </p>
+
+      <h2>Controls</h2>
+      <p>
+        <strong>Speed</strong> &mdash; animation multiplier (1x real-time to 3600x).<br>
+        <strong>Date/Time</strong> &mdash; jump to any moment.<br>
+        <strong>Camera: Ecliptic</strong> &mdash; lock camera onto the ecliptic plane (apex at top).<br>
+        <strong>Camera: Follow Apex</strong> &mdash; lock camera above the apex as it sweeps around.<br>
+        <strong>Go to Max Time for This Day</strong> &mdash; jump to the next moment when the
+        apex reaches the global maximum (Mont Forel).<br>
+        <strong>Topo toggle</strong> &mdash; compare topographic vs. pure ellipsoid apex.
+      </p>
+
+      <h2>Data sources</h2>
+      <p>
+        <strong>Topography</strong>: <a href="https://www.ncei.noaa.gov/products/etopo-global-relief-model" target="_blank">NOAA ETOPO 2022</a>, 60-arc-second global relief model, extracted for 60°N&ndash;75°N and downsampled to 2-arc-minute resolution. Sharp summit elevations corrected from survey data for known peaks.<br>
+        <strong>Earth orientation</strong>: CesiumJS ICRF/ITRF rotation via IAU precession/nutation models.<br>
+        <strong>Ellipsoid</strong>: WGS84 (a = 6,378,137 m, f = 1/298.257).<br>
+        <strong>Obliquity</strong>: J2000.0 mean value, 23.4393°.
+      </p>
+
+      <div class="footnote">
+        Built with <a href="https://cesium.com/cesiumjs/" target="_blank">CesiumJS</a>
+        and <a href="https://vite.dev/" target="_blank">Vite</a>.
+        Imagery: OpenStreetMap contributors.<br>
+        Contact: <a href="mailto:info@ecliptic-apex.com">info@ecliptic-apex.com</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
