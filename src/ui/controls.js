@@ -88,13 +88,19 @@ export function initControls(clock, onChange) {
     }
   }
 
-  // Now button
+  // Now button — reset to real time at 1x speed, playing
   if (elBtnNow) {
     elBtnNow.addEventListener("click", () => {
       clock.currentTime = Cesium.JulianDate.fromDate(new Date());
       if (elDatetime) {
         elDatetime.value = new Date().toISOString().slice(0, 19);
       }
+      state.speedMultiplier = 1;
+      clock.multiplier = 1;
+      if (elSpeed) elSpeed.value = "1";
+      state.playing = true;
+      clock.shouldAnimate = true;
+      if (elBtnPlayPause) elBtnPlayPause.textContent = "\u23F8";
       onChange(state);
     });
   }

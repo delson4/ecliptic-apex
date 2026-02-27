@@ -15,7 +15,7 @@ import { updateInfoPanel, updateAbsoluteMaxPanel, updatePanelTitle } from "./ui/
 import { initControls, syncDatetimeInput } from "./ui/controls.js";
 import { showLoading, hideLoading } from "./ui/loading.js";
 import { GRID_LAT_MIN, GRID_LAT_MAX, GRID_LAT_MIN_S, GRID_LAT_MAX_S, SIDEREAL_DAY_S, RAD2DEG } from "./constants.js";
-import { gmstDeg } from "./math/sidereal.js";
+import { gmstDeg, formatGMST } from "./math/sidereal.js";
 
 export class App {
   constructor() {
@@ -357,6 +357,8 @@ export class App {
 
     // Track and absolute max — now instant (precomputed tracks, no grid scan)
     this._applyTrack();
+    // Re-apply trail visibility after track recreation
+    if (this.trackEntity) this.trackEntity.show = state.showTrail;
     this._computeAbsoluteMaximum();
     this._lastUpdateSec = -Infinity;
 
@@ -416,9 +418,22 @@ export class App {
     }
 
     const julianDate = this.clock.currentTime;
-    const epochSec = Cesium.JulianDate.toDate(julianDate).getTime() / 1000;
+    const utcDate = Cesium.JulianDate.toDate(julianDate);
+    const epochSec = utcDate.getTime() / 1000;
 
-    // Throttle: skip if less than 5 simulated seconds since last update
+    // Always update clock display and datetime input every ~1 simulated second
+    const timeDelta = Math.abs(epochSec - (this._lastTimeSec || -Infinity));
+    if (timeDelta >= 1) {
+      this._lastTimeSec = epochSec;
+      syncDatetimeInput(utcDate);
+      // Update just the time fields in the info panel
+      const elUtc = document.getElementById("utc-time");
+      if (elUtc) elUtc.textContent = utcDate.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+      const elGmst = document.getElementById("gmst-time");
+      if (elGmst) elGmst.textContent = formatGMST(gmstDeg(utcDate));
+    }
+
+    // Throttle apex computation: skip if less than 5 simulated seconds since last update
     const simDelta = Math.abs(epochSec - this._lastUpdateSec);
     if (simDelta < 5) return;
     this._lastUpdateSec = epochSec;
@@ -445,8 +460,7 @@ export class App {
     // Update entity trail
     updateApexPosition(this.apexEntity, apex.lat, apex.lon, apex.elev);
 
-    // Update info panel
-    const utcDate = Cesium.JulianDate.toDate(julianDate);
+    // Update info panel (full update including apex data)
     updateInfoPanel(apex, utcDate, useTopo);
 
     // Sync datetime input

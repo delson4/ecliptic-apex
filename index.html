@@ -37,7 +37,7 @@
       backdrop-filter: blur(6px);
     }
     #info-panel h2 {
-      font-size: 15px;
+      font-size: 18px;
       margin-bottom: 8px;
       color: #7df;
       letter-spacing: 0.5px;
@@ -59,7 +59,7 @@
       padding: 3px 10px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 11px;
+      font-size: 12px;
       margin-top: 4px;
     }
     #info-panel .action-btn:hover { background: #3a2a4a; }
@@ -280,12 +280,6 @@
         font-size: 11px; /* restore toggle label text */
       }
 
-      /* About button */
-      #btn-about {
-        padding: 6px 12px;
-        font-size: 12px;
-      }
-
       /* About overlay — mobile */
       #about-content {
         padding: 20px 16px;
@@ -327,6 +321,20 @@
         <div><span class="label">Topo bonus: </span><span class="value" id="abs-topo-adv">&mdash;</span></div>
         <div><span class="label">Next occurs: </span><span class="value" id="abs-time">&mdash;</span></div>
         <button class="action-btn" id="btn-goto-max">Go to Max Time for This Day</button>
+        <hr>
+        <button id="btn-about" style="
+          display: block;
+          background: #1a2a3a;
+          border: 1px solid rgba(100,200,255,0.3);
+          color: #7df;
+          padding: 8px 0;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 13px;
+          letter-spacing: 0.5px;
+          width: 100%;
+          text-align: center;
+        ">About This Tool</button>
       </div>
     </div>
   </div>
@@ -339,8 +347,8 @@
         <option value="3600">3600x</option>
       </select>
     </label>
-    <label>Date/Time (UTC):
-      <input type="datetime-local" id="datetime-input" step="1" />
+    <label>Date/Time:
+      <input type="datetime-local" id="datetime-input" step="1" /> UTC
     </label>
     <button id="btn-now">Now</button>
     <button id="btn-play-pause">&#x23F8;</button>
@@ -363,20 +371,6 @@
       <label><input type="checkbox" id="toggle-topo" checked /> Topo</label>
     </div>
     </div>
-  <button id="btn-about" style="
-    position: absolute;
-    top: 12px; right: 12px;
-    background: rgba(0,0,0,0.80);
-    border: 1px solid rgba(100,200,255,0.3);
-    color: #7df;
-    padding: 8px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    z-index: 10;
-    backdrop-filter: blur(6px);
-    letter-spacing: 0.5px;
-  ">About</button>
   <div id="about-overlay">
     <div id="about-content">
       <button class="close-btn" id="about-close">Close</button>
@@ -401,7 +395,8 @@
         close to Earth's spin axis and too far from the ecliptic zenith. Everest
         is the tallest mountain, but at 28°N it's nowhere near the right latitude.
         The true "top of the world" &mdash; the point farthest above our orbital
-        plane &mdash; is a remote nunatak in East Greenland.
+        plane &mdash; is a remote nunatak in East Greenland, at only a precise moment
+        that occurs approximately once a day.
       </p>
 
       <h2>Why isn't it the North Pole, again?</h2>

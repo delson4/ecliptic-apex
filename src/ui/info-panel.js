@@ -37,7 +37,14 @@ function fmtLon(lon) {
  */
 export function updatePanelTitle(south) {
   if (elTitle) {
-    elTitle.textContent = south ? "ECLIPTIC APEX (SOUTH IS UP)" : "ECLIPTIC APEX";
+    const chevron = document.getElementById("panel-chevron");
+    const text = south ? "ECLIPTIC APEX (SOUTH IS UP) " : "ECLIPTIC APEX ";
+    // Preserve the chevron span when updating title text
+    if (chevron) {
+      elTitle.firstChild.textContent = text;
+    } else {
+      elTitle.textContent = text;
+    }
   }
 }
 
