@@ -22,9 +22,17 @@
       width: 100%; height: 100%;
     }
 
-    #info-panel {
+    #left-stack {
       position: absolute;
       top: 12px; left: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    #info-panel {
       background: rgba(0,0,0,0.80);
       border: 1px solid rgba(100,200,255,0.3);
       border-radius: 8px;
@@ -33,7 +41,6 @@
       line-height: 1.6;
       min-width: 280px;
       max-width: 320px;
-      z-index: 10;
       backdrop-filter: blur(6px);
     }
     #info-panel h2 {
@@ -302,6 +309,7 @@
   <div id="app">
     <div id="globe-container">
       <div id="globe-viewer"></div>
+      <div id="left-stack">
       <div id="info-panel">
         <h2 id="panel-title">ECLIPTIC APEX <span id="panel-chevron"></span></h2>
         <div><span class="label">Latitude: </span><span class="value" id="apex-lat">&mdash;</span></div>
@@ -321,20 +329,18 @@
         <div><span class="label">Topo bonus: </span><span class="value" id="abs-topo-adv">&mdash;</span></div>
         <div><span class="label">Next occurs: </span><span class="value" id="abs-time">&mdash;</span></div>
         <button class="action-btn" id="btn-goto-max">Go to Max Time for This Day</button>
-        <hr>
-        <button id="btn-about" style="
-          display: block;
-          background: #1a2a3a;
-          border: 1px solid rgba(100,200,255,0.3);
-          color: #7df;
-          padding: 8px 0;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 13px;
-          letter-spacing: 0.5px;
-          width: 100%;
-          text-align: center;
-        ">About This Tool</button>
+      </div>
+      <button id="btn-about" style="
+        background: rgba(0,0,0,0.80);
+        border: 1px solid rgba(100,200,255,0.3);
+        color: #7df;
+        padding: 8px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        backdrop-filter: blur(6px);
+        letter-spacing: 0.5px;
+      ">About This Tool</button>
       </div>
     </div>
   </div>
