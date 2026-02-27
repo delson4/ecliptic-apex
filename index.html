@@ -228,6 +228,8 @@
 
     /* Mobile optimizations */
     @media (max-width: 768px) {
+      .hide-mobile { display: none; }
+
       /* Info panel — collapsed by default */
       #info-panel {
         min-width: 0;
@@ -372,7 +374,7 @@
       </select>
     </label>
     <div class="toggle-group">
-      <label><input type="checkbox" id="toggle-plane" checked /> Plane</label>
+      <label><input type="checkbox" id="toggle-plane" checked /> Ecliptic<span class="hide-mobile"> Plane</span></label>
       <label><input type="checkbox" id="toggle-trail" checked /> Trail</label>
       <label><input type="checkbox" id="toggle-topo" checked /> Topo</label>
     </div>
